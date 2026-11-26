@@ -1,0 +1,334 @@
+{
+  "name": "My workflow 2",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "Buzón de Reclamos 🚲",
+        "formDescription": "En nuestra tienda de bicicletas, tu satisfacción es nuestra prioridad. 💚 Queremos brindarte siempre la mejor experiencia, por eso hemos creado este espacio para escuchar tus inquietudes, reclamos y sugerencias.\n\nCuéntanos qué sucedió y trabajaremos para darte una solución oportuna y mejorar cada día nuestro servicio.\n\n¡Gracias por ayudarnos a pedalear hacia la excelencia! 🚴✨",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Ingresa tu nombre",
+              "fieldName": "nombre",
+              "placeholder": "John Doe",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Ingresa tu correo",
+              "fieldName": "correo",
+              "placeholder": "correo@example.com",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Cuéntanos tu reclamo",
+              "fieldType": "textarea",
+              "fieldName": "reclamo",
+              "placeholder": "Mi inconformidad es...",
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.6,
+      "position": [
+        0,
+        0
+      ],
+      "id": "b15a5e47-51c9-4e7a-b7bb-e237bdb8e015",
+      "name": "On form submission",
+      "webhookId": "8e025a7d-fcfe-48d7-967d-61aaea63439b"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Cliente: {{ $json.nombre }}\nCorreo: {{ $json.correo }}\nReclamo: {{ $json.reclamo }}",
+        "hasOutputParser": true,
+        "messages": {
+          "messageValues": [
+            {
+              "message": " Eres un analista de servicio al cliente de una tienda de bicicletas.  Tu función es analizar los reclamos recibidos y generar una clasificación que permita al jefe de soporte priorizar los casos.  Para cada reclamo debes generar exactamente tres campos:  1. tema: categoría principal del reclamo. 2. urgencia: nivel de prioridad del caso. 3. respuesta_cliente: respuesta breve, amable y profesional dirigida al cliente. Máximo una frase.  CRITERIOS DE CLASIFICACIÓN:  Tema: - daño: productos defectuosos, rotos o deteriorados. - cobro: pagos duplicados, errores de facturación o inconvenientes económicos. - consulta: preguntas sobre productos, tallas, disponibilidad o información. - envío: retrasos, entregas o pedidos no recibidos. - garantía: solicitudes relacionadas con garantías. - otro: situaciones que no correspondan a las categorías anteriores.  Urgencia: - alta: problemas económicos, productos dañados o situaciones que requieren atención prioritaria. - media: inconvenientes que requieren revisión, pero no representan una afectación crítica. - baja: consultas generales o solicitudes informativas.  REGLAS IMPORTANTES: - No inventes información. - No prometas devoluciones, reemplazos, descuentos ni fechas de solución que no hayan sido confirmados. - No afirmes que un producto está disponible si no tienes esa información. - Mantén un tono amable, profesional y empático. - La respuesta al cliente debe tener máximo una frase. - Devuelve exclusivamente un objeto JSON válido. - No utilices bloques Markdown ni explicaciones adicionales. - Respeta exactamente los nombres de los campos solicitados.  EJEMPLOS:  Entrada: Llegó rota la llanta. Salida: {\"tema\":\"daño\",\"urgencia\":\"alta\",\"respuesta_cliente\":\"Lamentamos el inconveniente ocasionado; revisaremos tu caso para brindarte una solución.\"}  Entrada: ¿Tienen cascos talla M? Salida: {\"tema\":\"consulta\",\"urgencia\":\"baja\",\"respuesta_cliente\":\"Gracias por tu interés, revisaremos la disponibilidad de esa talla para confirmártela.\"}  Entrada: Me cobraron dos veces el mismo pedido. Salida: {\"tema\":\"cobro\",\"urgencia\":\"alta\",\"respuesta_cliente\":\"Lamentamos lo sucedido, revisaremos el cobro reportado para verificar qué ocurrió.\"}  RECLAMO DEL CLIENTE: {{ $json.reclamo }}"
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        224,
+        0
+      ],
+      "id": "2308d363-c567-4c59-afa1-cab31030543d",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-oss-20b",
+        "options": {
+          "maxTokensToSample": 600,
+          "temperature": 0.2
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        224,
+        272
+      ],
+      "id": "dcd73d28-3b57-4ce0-815d-571051e027e5",
+      "name": "Groq Chat Model",
+      "credentials": {
+        "groqApi": {
+          "id": "vPIuhUkQsvqayO14",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"tema\": \"daño\",\n  \"urgencia\": \"alta\",\n  \"respuesta_cliente\": \"Lamentamos el daño; enviaremos una llanta nueva esta semana.\"\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        352,
+        208
+      ],
+      "id": "fe73460d-367c-41f0-b4a7-1dcdaac49d86",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 4
+          },
+          "conditions": [
+            {
+              "id": "8846520b-0876-42af-87e3-5e6b4079209c",
+              "leftValue": "={{ $json.output.urgencia }}",
+              "rightValue": "alta",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.4,
+      "position": [
+        592,
+        0
+      ],
+      "id": "e3abbf1b-dcc9-442c-a323-86a011685e01",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "sendTo": "stiven23ospina@gmail.com",
+        "subject": "=🚨Reclamo Urgente: {{$json.output.tema}}",
+        "message": "= <!DOCTYPE html> <html lang=\"es\"> <head>   <meta charset=\"UTF-8\">   <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">   <title>Nuevo reclamo recibido</title> </head>  <body style=\"margin:0; padding:30px 10px; background-color:#f4f6f9; font-family:Arial, Helvetica, sans-serif; color:#263445;\">    <div style=\"max-width:650px; margin:0 auto; background:#ffffff; border-radius:12px; overflow:hidden; border:1px solid #e5eaf0;\">      <!-- Encabezado -->     <div style=\"background:#172b4d; padding:28px 30px; color:#ffffff;\">       <div style=\"font-size:12px; letter-spacing:2px; color:#a9bdd8; text-transform:uppercase; margin-bottom:12px;\">         Sistema de atención al cliente       </div>        <h1 style=\"margin:0; font-size:24px; font-weight:700;\">         Nuevo reclamo recibido       </h1>        <p style=\"margin:10px 0 0; color:#d5dfec; font-size:14px; line-height:1.6;\">         Se ha registrado una nueva solicitud que requiere revisión y seguimiento.       </p>     </div>      <!-- Alerta -->     <div style=\"padding:20px 30px 0;\">       <div style=\"background:#fff4e5; border-left:4px solid #ed9b27; padding:14px 16px; border-radius:5px;\">         <div style=\"font-size:14px; font-weight:bold; color:#a65b00;\">           Atención requerida         </div>         <div style=\"font-size:13px; color:#805b32; margin-top:5px;\">           Nivel de urgencia: {{ $json.output.urgencia }}         </div>       </div>     </div>      <!-- Información del cliente -->     <div style=\"padding:25px 30px 10px;\">       <h2 style=\"font-size:16px; color:#172b4d; margin:0 0 16px;\">         Información del cliente       </h2>        <table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"font-size:14px; border-collapse:collapse;\">         <tr>           <td style=\"padding:11px 0; color:#718096; width:110px; border-bottom:1px solid #edf0f4;\">             Cliente           </td>           <td style=\"padding:11px 0; font-weight:bold; border-bottom:1px solid #edf0f4;\">             {{ $('On form submission').item.json.nombre }}           </td>         </tr>          <tr>           <td style=\"padding:11px 0; color:#718096; border-bottom:1px solid #edf0f4;\">             Correo           </td>           <td style=\"padding:11px 0; border-bottom:1px solid #edf0f4;\">             {{ $('On form submission').item.json.correo }}           </td>         </tr>          <tr>           <td style=\"padding:11px 0; color:#718096;\">             Tema           </td>           <td style=\"padding:11px 0; font-weight:bold;\">             {{ $json.output.tema }}           </td>         </tr>       </table>     </div>      <!-- Reclamo -->     <div style=\"padding:15px 30px;\">       <h2 style=\"font-size:16px; color:#172b4d; margin:0 0 12px;\">         Detalle del reclamo       </h2>        <div style=\"background:#f7f9fc; border:1px solid #e8edf3; padding:18px; border-radius:8px; font-size:14px; line-height:1.7; color:#465568;\">         {{ $('On form submission').item.json.reclamo }}       </div>     </div>      <!-- Respuesta sugerida -->     <div style=\"padding:15px 30px 30px;\">       <h2 style=\"font-size:16px; color:#172b4d; margin:0 0 12px;\">         Respuesta sugerida al cliente       </h2>        <div style=\"background:#eef6ff; border:1px solid #d6e8fb; border-radius:8px; padding:20px;\">         <div style=\"font-size:12px; color:#3974b8; font-weight:bold; text-transform:uppercase; letter-spacing:1px; margin-bottom:10px;\">           Propuesta generada por el sistema         </div>          <div style=\"font-size:14px; line-height:1.8; color:#344b65;\">           {{ $json.output.respuesta_cliente }}         </div>       </div>     </div>      <!-- Pie -->     <div style=\"background:#f7f9fc; border-top:1px solid #e8edf3; padding:20px 30px; text-align:center;\">       <p style=\"margin:0; font-size:12px; color:#718096; line-height:1.6;\">         Notificación automática generada por el sistema de gestión de reclamos.         <br>         Se recomienda revisar la información y validar la respuesta antes de enviarla al cliente.       </p>     </div>    </div>  </body> </html>",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        816,
+        -64
+      ],
+      "id": "28854957-295e-4eec-acee-3eb4c865b0ca",
+      "name": "Send a message",
+      "webhookId": "4fc7e4e3-1572-4f4f-8bfd-1d103a58fdd2",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "djNkzgYlBpMZ6cZn",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "dataTableId": {
+          "__rl": true,
+          "value": "57MvWngh5xC2qFjh",
+          "mode": "list",
+          "cachedResultName": "reclamos",
+          "cachedResultUrl": "/projects/4DDVjRaoItUWS31f/datatables/57MvWngh5xC2qFjh"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "nombre": "={{ $('On form submission').item.json.nombre }}",
+            "correo": "={{ $('On form submission').item.json.correo }}",
+            "reclamo": "={{ $('On form submission').item.json.reclamo }}",
+            "tema": "={{ $('Basic LLM Chain').item.json.output.tema }}",
+            "urgencia": "={{ $('Basic LLM Chain').item.json.output.urgencia }}",
+            "respuesta": "={{ $('Basic LLM Chain').item.json.output.respuesta_cliente }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "nombre",
+              "displayName": "nombre",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "correo",
+              "displayName": "correo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "reclamo",
+              "displayName": "reclamo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "tema",
+              "displayName": "tema",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "urgencia",
+              "displayName": "urgencia",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "respuesta",
+              "displayName": "respuesta",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        816,
+        96
+      ],
+      "id": "2a66b7c7-1c02-49c4-88b1-136e35e407ad",
+      "name": "Insert row"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "On form submission": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Insert row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "172f96e2-4829-4456-9fe7-0de2a7f7405d",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "034aba26fa91b2f7a573c7b9b0658bf36118ec5ee0e94a65440d2f8f9b106774"
+  },
+  "nodeGroups": [],
+  "id": "V0YZyUtBfZEFE6in",
+  "tags": []
+}
